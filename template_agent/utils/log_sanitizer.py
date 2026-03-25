@@ -21,30 +21,37 @@ PII_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\b\d{9}\b(?=\s|$|[^0-9])"), "***SSN***"),
     (re.compile(r"\b(?:\d[ -]*?){13,19}\b"), "***CREDIT_CARD***"),
     (
-        re.compile(
-            r"(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
-        ),
+        re.compile(r"(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
         "***PHONE***",
     ),
 ]
 
 CREDENTIAL_PATTERNS: List[Tuple[re.Pattern, str]] = [
-    (re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE), "Bearer ***TOKEN***"),
+    (
+        re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE),
+        "Bearer ***TOKEN***",
+    ),
     (re.compile(r"Basic\s+[A-Za-z0-9+/]+=*", re.IGNORECASE), "Basic ***TOKEN***"),
     (
         re.compile(r"eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
         "***JWT***",
     ),
     (
-        re.compile(r"(?i)(?:api[_-]?key|apikey)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9\-._~+/]{16,}[\"']?"),
+        re.compile(
+            r"(?i)(?:api[_-]?key|apikey)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9\-._~+/]{16,}[\"']?"
+        ),
         "***API_KEY***",
     ),
     (
-        re.compile(r"(?i)(?:password|passwd|pwd)[\"']?\s*[:=]\s*[\"']?[^\s\"',}{]+[\"']?"),
+        re.compile(
+            r"(?i)(?:password|passwd|pwd)[\"']?\s*[:=]\s*[\"']?[^\s\"',}{]+[\"']?"
+        ),
         "***PASSWORD***",
     ),
     (
-        re.compile(r"(?i)(?:secret[_-]?key|client[_-]?secret)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9\-._~+/]{8,}[\"']?"),
+        re.compile(
+            r"(?i)(?:secret[_-]?key|client[_-]?secret)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9\-._~+/]{8,}[\"']?"
+        ),
         "***SECRET***",
     ),
     (
@@ -108,6 +115,12 @@ class LogSanitizer:
         enabled: bool = True,
         custom_patterns: Optional[List[Tuple[re.Pattern, str]]] = None,
     ):
+        """Initialise the sanitizer with optional custom patterns.
+
+        Args:
+            enabled: Toggle sanitization on/off.
+            custom_patterns: Extra (compiled_regex, replacement) pairs to apply.
+        """
         self.enabled = enabled
         self._patterns: List[Tuple[re.Pattern, str]] = []
         if enabled:

@@ -22,6 +22,7 @@ def _reset_sanitizer():
     yield
     reset_default_sanitizer()
 
+
 class TestPIISanitization:
     """Verify PII regex patterns."""
 
@@ -61,12 +62,15 @@ class TestPIISanitization:
         assert "***CREDIT_CARD***" in result
         assert "4111" not in result
 
+
 class TestCredentialSanitization:
     """Verify credential / token regex patterns."""
 
     def test_bearer_token(self):
         sanitizer = LogSanitizer()
-        result = sanitizer.sanitize_string("Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9")
+        result = sanitizer.sanitize_string(
+            "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9"
+        )
         assert result == "Bearer ***TOKEN***"
 
     def test_basic_auth(self):
