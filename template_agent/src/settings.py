@@ -151,6 +151,22 @@ class Settings(BaseSettings):
         },
     )
 
+    # Log Sanitization Configuration
+    LOG_SANITIZATION_ENABLED: bool = Field(
+        default=True,
+        json_schema_extra={
+            "env": "LOG_SANITIZATION_ENABLED",
+            "description": "Enable PII and credential sanitization in logs",
+        },
+    )
+    LOG_SANITIZATION_CUSTOM_PATTERNS: str = Field(
+        default="",
+        json_schema_extra={
+            "env": "LOG_SANITIZATION_CUSTOM_PATTERNS",
+            "description": "Comma-separated additional regex patterns to redact from logs",
+        },
+    )
+
     @property
     def database_uri(self) -> str:
         """Generate database URI from individual components.
