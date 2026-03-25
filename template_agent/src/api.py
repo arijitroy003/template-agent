@@ -23,6 +23,7 @@ from template_agent.src.routes.history import router as history_router
 from template_agent.src.routes.stream import router as stream_router
 from template_agent.src.routes.threads import router as threads_router
 from template_agent.src.settings import settings
+from template_agent.utils.log_sanitizer import sanitize_headers
 from template_agent.utils.pylogger import get_python_logger
 
 logger = get_python_logger(settings.PYTHON_LOG_LEVEL)
@@ -48,9 +49,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             else None,
         }
 
-        # Optionally log headers
+        # Optionally log headers (sanitized to strip tokens/credentials)
         if settings.REQUEST_LOG_HEADERS:
-            request_data["headers"] = dict(request.headers)
+            request_data["headers"] = sanitize_headers(dict(request.headers))
 
         # Optionally log request body
         if settings.REQUEST_LOG_BODY:
@@ -94,9 +95,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "duration_ms": round(duration_ms, 2),
         }
 
-        # Optionally log response headers
+        # Optionally log response headers (sanitized)
         if settings.REQUEST_LOG_HEADERS:
-            response_data["headers"] = dict(response.headers)
+            response_data["headers"] = sanitize_headers(dict(response.headers))
 
         logger.info("outgoing_response", **response_data)
 

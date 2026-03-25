@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Set
 
 import structlog
 
+from template_agent.utils.log_sanitizer import create_sanitize_processor
+
 # HTTP clients
 HTTP_CLIENT_LOGGERS = {
     "urllib3",
@@ -131,6 +133,7 @@ def get_python_logger(log_level: str = "INFO") -> structlog.BoundLogger:
                 structlog.processors.StackInfoRenderer(),
                 structlog.processors.format_exc_info,
                 structlog.processors.UnicodeDecoder(),
+                create_sanitize_processor(),
                 structlog.processors.JSONRenderer(),
             ],
             context_class=dict,
@@ -157,6 +160,7 @@ def get_uvicorn_log_config(log_level: str = "INFO") -> Dict[str, Any]:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
+            create_sanitize_processor(),
         ],
     }
 
