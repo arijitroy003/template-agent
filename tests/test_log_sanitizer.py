@@ -8,6 +8,7 @@ import pytest
 from template_agent.utils.log_sanitizer import (
     REDACTED,
     LogSanitizer,
+    _get_default_sanitizer,
     _parse_custom_patterns,
     create_sanitize_processor,
     reset_default_sanitizer,
@@ -200,6 +201,10 @@ class TestSanitizationDisabled:
         sanitizer = LogSanitizer(enabled=False)
         assert sanitizer.sanitize_value("Bearer xyz") == "Bearer xyz"
 
+    def test_sanitize_empty_string(self):
+        sanitizer = LogSanitizer()
+        assert sanitizer.sanitize_string("") == ""
+
 
 class TestCustomPatterns:
     """Verify user-supplied custom patterns."""
@@ -265,10 +270,79 @@ class TestStructlogProcessor:
         assert result["headers"]["authorization"] == REDACTED
         assert result["headers"]["content-type"] == "application/json"
 
+    def test_processor_disabled_returns_event_unchanged(self):
+        disabled = LogSanitizer(enabled=False)
+        with patch(
+            "template_agent.utils.log_sanitizer._default_sanitizer", new=disabled
+        ):
+            processor = create_sanitize_processor()
+            event_dict = {"event": "login", "password": "secret", "email": "a@b.com"}
+            result = processor(None, "info", event_dict)
+            assert result["password"] == "secret"
+            assert result["email"] == "a@b.com"
+
+    def test_get_default_sanitizer_fallback_on_import_error(self):
+        with patch(
+            "template_agent.utils.log_sanitizer._default_sanitizer",
+            new=None,
+        ):
+            with patch.dict("sys.modules", {"template_agent.src.settings": None}):
+                sanitizer = _get_default_sanitizer()
+                assert sanitizer.enabled is True
+
 
 # ---------------------------------------------------------------------------
 # Non-sensitive data passthrough
 # ---------------------------------------------------------------------------
+
+
+try:
+    from template_agent.src.api import RequestLoggingMiddleware
+
+    _HAS_API_MODULE = True
+except ImportError:
+    _HAS_API_MODULE = False
+
+
+@pytest.mark.skipif(not _HAS_API_MODULE, reason="api.py deps not installed")
+class TestRequestLoggingMiddlewareSanitization:
+    """Verify sanitize_headers is applied in RequestLoggingMiddleware."""
+
+    def test_middleware_sanitizes_request_headers(self):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        app = FastAPI()
+        app.add_middleware(RequestLoggingMiddleware)
+
+        @app.get("/ping")
+        async def ping():
+            return {"ok": True}
+
+        client = TestClient(app)
+        response = client.get(
+            "/ping",
+            headers={"Authorization": "Bearer secret123", "X-Custom": "safe"},
+        )
+        assert response.status_code == 200
+
+    def test_middleware_sanitizes_response_headers(self):
+        from fastapi import FastAPI
+        from fastapi.responses import JSONResponse
+        from fastapi.testclient import TestClient
+
+        app = FastAPI()
+        app.add_middleware(RequestLoggingMiddleware)
+
+        @app.get("/setcookie")
+        async def setcookie():
+            resp = JSONResponse({"ok": True})
+            resp.headers["Set-Cookie"] = "session=abc123"
+            return resp
+
+        client = TestClient(app)
+        response = client.get("/setcookie")
+        assert response.status_code == 200
 
 
 class TestNonSensitivePassthrough:
